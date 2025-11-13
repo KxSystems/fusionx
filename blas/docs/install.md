@@ -27,7 +27,7 @@ The BLAS module comes bundled with the fusionx module. Explicit installation is 
 From any KDB-X session, you can now import the BLAS library:
 
 ```q
-q).blas:use(`fusion:blas;([lib:"libopenblas.so"]))
+q).blas:use(`kx.fusion:blas;([lib:"libopenblas.so"]))
 Successfully loaded BLAS library: libopenblas.so
 ```
 

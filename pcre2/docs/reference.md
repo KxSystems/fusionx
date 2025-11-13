@@ -1,7 +1,7 @@
 # PCRE2 Module Reference
 The PCRE2 module can be loaded like so:
 ```
-q)pcre2:use`fusion:pcre2
+q)pcre2:use`kx.fusion:pcre2
 ```
 The PCRE2 module supports matching
 ```

@@ -5,7 +5,7 @@ The KDB-X BLAS module provides q bindings to BLAS (Basic Linear Algebra Subprogr
 For documentation purposes, examples assume the module has been loaded into the namespace `.blas`:
 
 ```q
-q).blas:use(`fusion:blas;([lib:"libopenblas.so"]))
+q).blas:use(`kx.fusion:blas;([lib:"libopenblas.so"]))
 ```
 
 ## Level 1 BLAS Functions

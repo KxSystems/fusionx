@@ -20,3 +20,8 @@ t)$[v<=10.23;1b;"pcre2: match: nested recursion at the same subject position"~.[
 t)"foobazfoobaz"~p.replace["bar";"foobarfoobar";"baz";::]
 t)"foobar"~p.replace["Bar";"foobar";"baz";::]
 t)"foobaz"~p.replace["Bar";"foobar";"baz";`caseless]
+t)112h~type p.compile["foo";::]
+t)r:p.compile["bar";::];([x0:enlist("bar";3;6)])~p.match[r;"foobar";::]
+t)"foobazfoobaz"~p.replace[r;"foobarfoobar";"baz";::]
+t)"foobazfoobaz"~p.replace[p.compile["bar";::];"foobarfoobar";"baz";::]
+t)([x0:enlist("Foo";0;3)])~p.match[p.compile["foo";`caseless];"Foo";::]

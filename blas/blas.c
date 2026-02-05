@@ -890,10 +890,10 @@ F_REG {
     P(xn<=1,krr("length"))
     P(xK[1]->t!=XD,krr("type"))
     K d = xK[1];
-    K v0 = k(0,"{x in key y}",ks("lib"),r1(d),0);
+    K v0 = k(0,"{x in key y}",ks("lib"),r1(d),(K)0);
     P(!v0->g,(r0(v0),krr("key")))
     r0(v0);
-    K v1 = k(0,"@",r1(d),ks("lib"),0);
+    K v1 = k(0,"@",r1(d),ks("lib"),(K)0);
     char library_filename[512];
     K v2 = !v1->t && v1->n>0 ? kK(v1)[0] : v1;
     if(v2->t==KC) {

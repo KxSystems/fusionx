@@ -27,12 +27,12 @@ Z K2(at){K z=knk(1,r1(y)),r=dot(x,z);R r0(z),r;}Z K1(call){K r=at(REG,*kK(x));P(
 F_EXP K1(fusion){K y,r;P(xt==101&&!xg,kp("hello"))P(xt==-KS,(r=fusion(y=knk(1,r1(x))),r0(y),r))
  P(!xt,!xn?krr("length"):xK[0]->t!=-KS?krr("type"):call(x))R 0;}
 
-Z K1(libs){R k(0, "key", r1(REG), 0);}
+Z K1(libs){R k(0, "key", r1(REG), (K)0);}
 
-F_EXP K1(kexport){R k(0,"{([libs:x])}",dl(libs, 1),0);}
+F_EXP K1(kexport){R k(0,"{([libs:x])}",dl(libs, 1),(K)0);}
 F_EXP K2(kprovide){
   K z = y->t==98? knk(2,r1(x),r1(y->k)) : x;
-  R k(0,"k){.[`/:(.z.M;x);();:;``export!(::;y)]}",r1(x),fusion(z),0);
+  R k(0,"k){.[`/:(.z.M;x);();:;``export!(::;y)]}",r1(x),fusion(z),(K)0);
 }
 
 Z K1(dir){R r1(*kK(REG));}

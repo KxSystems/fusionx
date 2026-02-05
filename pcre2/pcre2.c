@@ -20,12 +20,29 @@ K perr(I e,S s,...){ZC b[4096];S p=b+7;int n=sizeof b-7,m;va_list v;va_start(v,s
  pcre2_get_error_message(e,p,n);R krr(b);}
 K1(version){char b[256];R pcre2_config(PCRE2_CONFIG_VERSION,b),kp(b);}
 I qg(K x){R xt==KC||xt==KG;}I qn(K x){R xt==101&&!xg;}I vt(K x){R xt<0?-xt:xt;}
+I qgf(K x){R qg(x)||xt==112;}
 
 V opt(K x, uint32_t*po) {if(!qn(x))DO(xt<0?1:xn,opt0(x->t<0?x->s:kS(x)[i],po))}
 
-Z void* compile(K x, uint32_t po) {
- int en;size_t eo;void*re=pcre2_compile(kC(x),xn,po,&en,&eo,0);
+V* cr(K x, uint32_t po) {
+ I en;size_t eo;V*re=pcre2_compile(kC(x),xn,po,&en,&eo,0);
  P(!re,perr(en,"compile at %zu",eo))
+ R re;
+}
+
+K fr(K x) {
+ V* re = (V*)kK(x)[1];
+ pcre2_code_free(re);
+ return (K)0;
+}
+
+V* gr(K x, uint32_t po) {
+ V* re;
+ if(xt == 112) {
+  re=(V*)kK(x)[1];
+ } else {
+  re=cr(x,po);P(!re,0);
+ }
  R re;
 }
 
@@ -35,9 +52,17 @@ ZI nm(void *md,size_t *off,uint32_t *po,size_t *ov) { /* zero width matches not 
   R 0;
 }
 
-K match(K x,K y,K z){P(!qg(x)||!qg(y),krr("type"))P(!qn(z)&&vt(z)!=KS,krr("type"))
+K compile(K x, K y) {P(!qg(x),krr("type"))P(!qn(y)&&vt(y)!=KS,krr("type"))
+ uint32_t po[]={0,0};opt(y,po);
+ V*re=cr(x,po[0]);P(!re,0);
+ K f = knk(2, fr, re);
+ f->t = 112;
+ R f;
+}
+
+K match(K x,K y,K z){P(!qgf(x)||!qg(y),krr("type"))P(!qn(z)&&vt(z)!=KS,krr("type"))
  uint32_t po[]={0,0};opt(z,po);
- void *re=compile(x,po[0]);P(!re,0);
+ V* re=gr(x,po[0]);P(!re,0);
  uint32_t cc,nc,nes;char*tp;
  pcre2_pattern_info(re,PCRE2_INFO_CAPTURECOUNT,&cc);
  pcre2_pattern_info(re,PCRE2_INFO_NAMECOUNT,&nc);
@@ -55,11 +80,11 @@ K match(K x,K y,K z){P(!qg(x)||!qg(y),krr("type"))P(!qn(z)&&vt(z)!=KS,krr("type"
   if(!nm(md,&off,&po[1],ov)) break;
   DO(rc,s=ov[2*i];e=ov[2*i+1];if(s<~(size_t)0)jk(kK(v)+i,knk(3,kpn(kC(y)+s,e-s),kj(s),kj(e))))
  }
- r=xD(k,v);L0:pcre2_match_data_free(md);pcre2_code_free(re);R r;}
+ r=xD(k,v);L0:pcre2_match_data_free(md);if(xt!=112)pcre2_code_free(re);R r;}
 
- K replace(K x1,K x2,K x3,K x4){P(!qg(x1)||!qg(x2)||!qg(x3),krr("type"))P(!qn(x4)&&vt(x4)!=KS,krr("type"))
+ K replace(K x1,K x2,K x3,K x4){P(!qgf(x1)||!qg(x2)||!qg(x3),krr("type"))P(!qn(x4)&&vt(x4)!=KS,krr("type"))
  uint32_t po[]={0,0}; opt(x4,po);
- void *re=compile(x1,po[0]);P(!re,0);
+ V* re=gr(x1,po[0]);P(!re,0);
  uint8_t *out = NULL; size_t outlen = 0;int rc, count = 0;K r;
  /* Should only repeat once. First call to pcre2_substitute sets output buffer length, second call does replacement. */
  do{
@@ -70,7 +95,7 @@ K match(K x,K y,K z){P(!qg(x)||!qg(y),krr("type"))P(!qn(z)&&vt(z)!=KS,krr("type"
   }
  }while (rc == PCRE2_ERROR_NOMEMORY && ++count < 2);
  r = kpn(out, outlen);
- L0:pcre2_code_free(re);R r;
+ L0:if(x1->t!=112)pcre2_code_free(re);R r;
 }
 
 F_REG{
@@ -80,4 +105,4 @@ FNS
 #undef _
  K n=ktn(KS,0),f=ktn(0,0);
 #define _(s,a) js(&n,ss(#s));jk(&f,dl(s,a));
- _(version,1)_(match,3)_(replace,4) R xD(n,f);}
+ _(version,1)_(match,3)_(replace,4)_(replace,4)_(compile,2) R xD(n,f);}

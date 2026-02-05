@@ -1,6 +1,6 @@
 CFLAGS+=-std=gnu99 -fvisibility=hidden -fPIC -I.
 ifdef DEBUG
-CFLAGS+=-gdwarf-2 -g3
+CFLAGS+=-gdwarf-2 -g3 -O0
 else
 CFLAGS+=-O2
 endif
@@ -16,15 +16,17 @@ A:=$(if $(filter %-linux-gnu,$M),l)$(if $(findstring -apple-,$M),m)$(if $(filter
 P:=$A
 A:=$(if $A,$A$(if $(filter x86_64-%,$M),i64)$(if $(filter aarch64-% arm64-%,$M),a64))
 $(if $A,,$(error couldn't determine the target platform: $(CC) -dumpmachine reports $M))
+H=$(shell uname -o)
 
 O=o
 E=so
 ifeq ($P,w)
 O=obj
 E=dll
-CROSS=x86_64-w64-mingw32-
 CFLAGS+=-m64
 endif
+
+CROSS:=$(if $(and $(findstring w,$P),$(findstring Linux,$H)),x86_64-w64-mingw32-)
 
 modules := blas pcre2 
 

@@ -1,8 +1,0 @@
-.vscode/
-tmp/
-*.so
-*.dll
-*.lib
-*.[oa]
-*.obj
-!q.lib

@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <ctype.h>
 #include "fusion.h"
 #include "k.h"
 
@@ -346,11 +347,17 @@ ZK z_dgemv(K matr, K x_vec, K y_vec, K params) {
 
     double alpha = get_double_value(params, "alpha", 1.0);
     double beta = get_double_value(params, "beta", 1.0);
-    char trans = get_char_value(params, "trans", 'N');
-
+    char trans = toupper((unsigned char)get_char_value(params, "trans", 'N'));
+   
     int64_t m = matr->n;
     int64_t n = kK(matr)[0]->n;
     int64_t incx = 1, incy = 1;
+
+    P(trans!='N' && trans!='T' && trans!='C', krr("trans value"))
+    P(trans=='N' && x_vec->n<n, krr("x length"))
+    P(trans!='N' && x_vec->n<m, krr("x length"))
+    P(trans=='N' && y_vec->n<m, krr("y length"))
+    P(trans!='N' && x_vec->n<n, krr("y length"))
 
     double* a_arr = malloc(m * n * sizeof(double));
     if (!a_arr) return krr("memory");
@@ -384,7 +391,7 @@ ZK z_dgbmv(K matr, K x_vec, K y_vec, K params) {
 
     double alpha = get_double_value(params, "alpha", 1.0);
     double beta = get_double_value(params, "beta", 1.0);
-    char trans = get_char_value(params, "trans", 'N');
+    char trans = toupper((unsigned char)get_char_value(params, "trans", 'N'));
     int64_t kl = get_int_value(params, "kl", 1);
     int64_t ku = get_int_value(params, "ku", 1);
 
@@ -392,6 +399,12 @@ ZK z_dgbmv(K matr, K x_vec, K y_vec, K params) {
     int64_t n = kK(matr)[0]->n;
     int64_t incx = 1, incy = 1;
     int64_t ldab = 2 * kl + ku + 1;
+
+    P(trans!='N' && trans!='T' && trans!='C', krr("trans value"))
+    P(trans=='N' && x_vec->n<n, krr("x length"))
+    P(trans!='N' && x_vec->n<m, krr("x length"))
+    P(trans=='N' && y_vec->n<m, krr("y length"))
+    P(trans!='N' && x_vec->n<n, krr("y length"))
 
     double* ab_arr = malloc(ldab * n * sizeof(double));
     if (!ab_arr) return krr("memory");
@@ -430,10 +443,14 @@ ZK z_dsymv(K matr, K x_vec, K y_vec, K params) {
 
     double alpha = get_double_value(params, "alpha", 1.0);
     double beta = get_double_value(params, "beta", 1.0);
-    char uplo = get_char_value(params, "uplo", 'U');
+    char uplo = toupper((unsigned char)get_char_value(params, "uplo", 'U'));
 
     int64_t n = matr->n;
     int64_t incx = 1, incy = 1;
+    
+    P(uplo!='U' && uplo!='L', krr("uplo value"))
+    P(x_vec->n<n, krr("x length"))
+    P(y_vec->n<n, krr("y length"))
 
     double* a_arr = k_to_double_array(matr);
     double* x_arr = k_to_double_array(x_vec);
@@ -535,6 +552,7 @@ ZK z_dtrmv(K matr, K x_vec, K params) {
 
     int64_t n = matr->n;
     int64_t incx = 1;
+    P(x_vec->n<n, krr("x length"))
 
     double* a_arr = k_to_double_array(matr);
     double* x_arr = k_to_double_array(x_vec);
@@ -568,6 +586,9 @@ ZK z_dger(K matr, K x_vec, K y_vec, K alpha_k) {
     int64_t m = matr->n;
     int64_t n = kK(matr)[0]->n;
     int64_t incx = 1, incy = 1;
+
+    P(x_vec->n<m, krr("x length"))
+    P(y_vec->n<n, krr("y length"))
 
     double* a_arr = k_to_double_array(matr);
     double* x_arr = k_to_double_array(x_vec);

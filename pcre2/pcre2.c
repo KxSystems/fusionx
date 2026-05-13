@@ -13,7 +13,7 @@ FNS
 #undef _
 enum{PCRE2_INFO_CAPTURECOUNT=4,PCRE2_INFO_NAMECOUNT=17,PCRE2_INFO_NAMEENTRYSIZE=18,PCRE2_INFO_NAMETABLE=19,PCRE2_CONFIG_VERSION=11,PCRE2_SUBSTITUTE_GLOBAL=256,PCRE2_SUBSTITUTE_OVERFLOW_LENGTH=4096,PCRE2_ERROR_NOMEMORY=-48};
 V opt0(char*s,uint32_t*po){struct{char*n;uint32_t o;int f;}o[]={{"CASELESS", 0x008,0},
-  {"MULTILINE",0x400,0},{"DUPNAMES", 0x040,0},{"NOTEMPTY", 0x004,1}};
+  {"MULTILINE",0x400,0},{"UTF",0x00080000,0},{"DOTALL",0x00000020,0},{"DUPNAMES", 0x040,0},{"NOTEMPTY", 0x004,1}};
  DO(sizeof(o)/sizeof(*o),if(!strcasecmp(s,o[i].n))po[o[i].f]|=o[i].o)}
 K perr(I e,S s,...){ZC b[4096];S p=b+7;int n=sizeof b-7,m;va_list v;va_start(v,s);
  memcpy(b,"pcre2: ",7);m=vsnprintf(p,n,s,v);va_end(v);p+=m;n-=m;memcpy(p,": ",2);p+=2;n-=2;
@@ -105,4 +105,4 @@ FNS
 #undef _
  K n=ktn(KS,0),f=ktn(0,0);
 #define _(s,a) js(&n,ss(#s));jk(&f,dl(s,a));
- _(version,1)_(match,3)_(replace,4)_(replace,4)_(compile,2) R xD(n,f);}
+ _(version,1)_(match,3)_(replace,4)_(compile,2) R xD(n,f);}

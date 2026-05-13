@@ -16,11 +16,18 @@ x1| "at" 5  7   "at" 9  11  "at" 20 22
 
 ### Parameters
 
-| Name      | Type(s)                    | Description                                                      |
-|-----------|----------------------------|------------------------------------------------------------------|
-| `pattern` | `string` \| `foreign`      | The pattern to match. Can also be a pre-compiled regex.          |
-| `text`    | `string`                   | The text string(s) to search.                                    |
-| `option`  | `symbol` \| `symbol[]`     | The options to consider: `` `caseless`` and/or `` `multiline``. The `` `caseless`` option causes case to be ignored when matching. The `` `multiline`` option causes the `^` and `$` anchors to match newlines when matching.|
+| Name      | Type(s)                    | Description                                            |
+|-----------|----------------------------|--------------------------------------------------------|
+| `pattern` | `string` \| `foreign`      | The pattern to match. Can also be a pre-compiled regex.|
+| `text`    | `string`                   | The text string(s) to search.                          |
+| `option`  | `symbol` \| `symbol[]`     | The options to consider are below:                    |
+
+|Option         |Description|
+|---------------|-----------|
+|`` `caseless`` |Ignore case when matching|
+|`` `multiline``|`^` and `$` anchors match newlines|
+|`` `utf``      |Treat pattern and subjects as UTF strings|
+|`` `dotall``   |`.` matches anything including NL|
 
 ### Returns
 
@@ -58,12 +65,19 @@ q)pcre2.replace["cat";text;"dog";::]
 
 ### Parameters
 
-| Name      | Type(s)                       | Description                                                      |
-|-----------|-------------------------------|------------------------------------------------------------------|
-| `pattern` | `string` \| `foreign`         | The pattern or compiled regex to search for.                     |
-| `text`    | `string`                      | The text string(s) to search.                                    |
-| `replace` | `string`                      | The pattern to replace with in the text sting.                   |
-| `option`  | `symbol` \| `symbol[]`        | The options to consider: `` `caseless`` and/or `` `multiline``. The `` `caseless`` option causes case to be ignored when matching. The `` `multiline`` option causes the `^` and `$` anchors to match newlines when matching.|
+| Name      | Type(s)                       | Description                                   |
+|-----------|-------------------------------|-----------------------------------------------|
+| `pattern` | `string` \| `foreign`         | The pattern or compiled regex to search for.  |
+| `text`    | `string`                      | The text string(s) to search.                 |
+| `replace` | `string`                      | The pattern to replace with in the text sting.|
+| `option`  | `symbol` \| `symbol[]`        | The options to consider are below:            |
+
+|Option         |Description|
+|---------------|-----------|
+|`` `caseless`` |Ignore case when matching|
+|`` `multiline``|`^` and `$` anchors match newlines|
+|`` `utf``      |Treat pattern and subjects as UTF strings|
+|`` `dotall``   |`.` matches anything including NL|
 
 ### Returns
 
@@ -97,10 +111,17 @@ You can precompile a regular expression and use it to match
 
 ### Parameters
 
-| Name      | Type(s)               | Description                                                      |
-|-----------|-----------------------|------------------------------------------------------------------|
-| `pattern` | `string`              | The pattern to compile.                    |
-| `option`  | `symbol` \| `symbol[]`| The options to consider: `` `caseless`` and/or `` `multiline``. The `` `caseless`` option causes case to be ignored when matching. The `` `multiline`` option causes the `^` and `$` anchors to match newlines when matching. |
+| Name      | Type(s)               | Description                        |
+|-----------|-----------------------|------------------------------------|
+| `pattern` | `string`              | The pattern to compile.            |
+| `option`  | `symbol` \| `symbol[]`| The options to consider are below: |
+
+|Option         |Description|
+|---------------|-----------|
+|`` `caseless`` |Ignore case when matching|
+|`` `multiline``|`^` and `$` anchors match newlines|
+|`` `utf``      |Treat pattern and subjects as UTF strings|
+|`` `dotall``   |`.` matches anything including NL|
 
 ### Returns
 

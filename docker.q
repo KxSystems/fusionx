@@ -1,4 +1,5 @@
 pkg:([pcre2:([arch:"";            ubuntu:"";           rocky:"";           centos:"pcre2";      conda:""]);
+      expat:([arch:"expat";       ubuntu:"libexpat1";  rocky:"expat";      centos:"";           conda:""]);
       blas: ([arch:"blas";        ubuntu:"libblas3";   rocky:"blas";       centos:"blas";       conda:"libblas"])])
 
 / https://stackoverflow.com/questions/78692851/could-not-retrieve-mirrorlist-http-mirrorlist-centos-org-release-7arch-x86-6
@@ -17,9 +18,9 @@ QLIC:$[count s:getenv`QLIC;s;QHOME]
 DIR:(last where"/"=s)#s:first -3#value{}
 
 c:();r:();
-{c,:enlist"docker run --rm -v '",QHOME,"':/q -v '",QLIC,"':/l -v '",DIR,"':/f -w /f -h `hostname` -u `id -un` -e QPATH=/f ",x," /q/l64/q test.q -test ",(" "sv(string key pkg),\:"/t.q")}each i;
+{c,:enlist"docker run --rm -v '",QHOME,"':/q -v '",QLIC,"':/l -v '",DIR,"':/f -w /f -h `hostname` -u `id -un` -e QPATH=/f/out ",x," /q/l64/q test.q -test ",(" "sv(string key pkg),\:"/t.q")}each i;
 /`:docker.txt 0: c;
 {r,:system x}each c;
-r:r[where not r like "Successfully loaded BLAS library*"]
+r:r[where not any like[r;] each ("Successfully loaded BLAS library*";"*all tests finished*")]
 show r;
 exit[0<count r]

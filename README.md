@@ -13,14 +13,15 @@ List available modules.
 ```q
 q)fusion:use`kx.fusion
 q)fusion.libs[]
-``blas`pcre2`
+``blas`pcre2`expat
 ```
 Every module is a dictionary of functions.
 ```q
 q)use`kx.fusion:pcre2
-version| `.m.fusion.pcre2.export.version[]
-match  | `.m.fusion.pcre2.export.match[]
-replace| `.m.fusion.pcre2.export.replace[]
+version| code
+match  | code
+replace| code
+compile| code
 ```
 Fusionx purposefully doesn't interact with q namespaces, leaving the choice to you.
 ```q
@@ -33,3 +34,12 @@ to (re)compile it. see `docker.q` for how we test it with different distribution
 
 Adding modules to fusionx is easy. Add a directory for it and put in `modules :=` in
 the Makefile. See any of the existing ones (e.g. `pcre2/pcre2.c`) for an example.
+
+To build on Linux or macOS simply invoke Make.
+```Bash
+make
+```
+The Windows binary can be cross complied on Linux using Mingw-w64.
+```Bash
+CC=x86_64-w64-mingw32-gcc make
+```

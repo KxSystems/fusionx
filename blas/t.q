@@ -153,6 +153,12 @@ result: blas.dgemv[matr; x; y; params]
 tol: 1e-10
 t)all abs[result - expected] < tol
 
+// dgemv - parameter check
+m:5;n:10;A:(m;n)#(m*n)?1.
+t)"x length"~.[blas.dgemv;(A;m?1.;n#0f;`alpha`beta`trans!(1;1;"N"));::]
+t)"y length"~.[blas.dgemv;(A;m?1.;n#0f;`alpha`beta`trans!(1;1;"T"));::]
+t)"trans value"~.[blas.dgemv;(A;n?1.;m#0f;`alpha`beta`trans!(1;1;"X"));::]
+
 // Test dgbmv
 n: 2
 m: 2

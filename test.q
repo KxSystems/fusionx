@@ -5,4 +5,5 @@ if[not any B like/: ("*so*";"*dll";"*dylib");B:`$B]
 
 .t.e:{if[not value x;-1 x]}
 {M::`$first"/"vs x;system"l ",x}each t;
-\\
+0N!"all tests finished";
+exit 0

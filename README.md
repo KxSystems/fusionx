@@ -6,8 +6,7 @@ To use the fusionx module copy the appropriate fusionx shared object file to the
 your KDB-X installation. The latest release can be obtained from [here](https://github.com/KxSystems/fusionx/tags).
 
 ```Bash
-unzip fusion.zip
-cp fusion.li64.so $HOME/.kx/mod/kx  # the use function will search this location by default
+unzip fusion-l64.zip -d ~/.kx/mod
 ```
 List available modules.
 ```q
@@ -39,7 +38,13 @@ To build on Linux or macOS simply invoke Make.
 ```Bash
 make
 ```
-The Windows binary can be cross complied on Linux using Mingw-w64.
+The Windows binary can be cross compiled on Linux using Mingw-w64.
 ```Bash
 CC=x86_64-w64-mingw32-gcc make
 ```
+
+## Notice
+
+Copyright (c) 2026 KX Systems, Inc.
+
+Licensed under the Apache License, Version 2.0.

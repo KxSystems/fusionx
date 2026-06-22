@@ -43,6 +43,7 @@ ifdef DEBUG
 CFLAGS+=-gdwarf-2 -g3 -O0
 COVERAGE+=-fprofile-arcs -ftest-coverage -fno-inline
 LDFLAGS+=-lgcov --coverage
+extras+=*.gcda *.gcno */*.gcda */*.gcno
 else
 CFLAGS+=-O2
 endif

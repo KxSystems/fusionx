@@ -1,4 +1,4 @@
-expat:use`$"fusion:",string M
+expat:use`$"kx.fusion:",string M
 p:expat.create[([cdh:{r::y}])]
 expat.parse[p;"<foo>Hello</foo>";1b];
 t)"Hello"~r

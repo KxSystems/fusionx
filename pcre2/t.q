@@ -1,4 +1,4 @@
-p:use`$"fusion:",string M;
+p:use`$"kx.fusion:",string M;
 v:"F"$5#p.version[]
 t)([x0:enlist("bar";3;6)])~p.match["bar";"foobar";::]
 t)([x0:(("foo";0;3);("bar";3;6));xx:enlist("foo";0;3);x2:enlist("bar";3;6)])~p.match["(?<xx>foo)|(bar)";"foobar";::]

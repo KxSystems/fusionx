@@ -1,0 +1,23 @@
+context:
+  version: "1.2.1"
+
+package:
+  name: q-kx-pcre2
+  version: ${{ version }}
+
+source:
+  path: ..
+  filter:
+    exclude:
+      - recipe/**
+
+build:
+  number: 0
+
+requirements:
+  host:
+    - q-kx-fusionx
+    - pcre2
+  run:
+    - q-kx-fusionx
+    - pcre2

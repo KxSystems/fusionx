@@ -1,4 +1,4 @@
-blas:use(`$"fusion:",string M;([lib:B]));
+blas:use(`$"kx.fusion:",string M;([lib:B]));
 tol:1e-5;
 n:1000000;
 

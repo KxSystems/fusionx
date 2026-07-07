@@ -1,4 +1,4 @@
-INSTALL_DIR=./out
+INSTALL_DIR=./out/kx
 
 
 S = $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))

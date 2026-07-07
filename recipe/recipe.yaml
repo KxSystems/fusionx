@@ -1,0 +1,64 @@
+context:
+  version: "1.2.1"
+
+package:
+  name: q-kx-fusionx
+  version: ${{ version }}
+
+source:
+  path: ..
+  filter:
+    exclude:
+      - recipe/**
+
+build:
+  number: 0
+  script:
+    - if: not win
+      then:
+        - E=so
+      else:
+        - E=dll
+    - if: win
+      then:
+        - A=wi64
+        - export CC=x86_64-w64-mingw32-gcc
+    - if: linux and x86_64
+      then:
+        - A=li64
+    - if: linux and aarch64
+      then:
+        - A=la64
+    - if: osx and arm64
+      then:
+        - A=ma64
+    - if: osx and x86_64
+      then:
+        - A=mi64
+    - make
+    - mkdir -p $PREFIX/lib/q/mod/kx
+    - cp fusion.$A.$E $PREFIX/lib/q/mod/kx/
+
+requirements:
+  build:
+    - make
+    - if: not win
+      then: ${{ compiler("c") }}
+
+tests:
+  - script:
+    - if: linux and x86_64
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/fusion.li64.so
+    - if: linux and aarch64
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/fusion.la64.so
+    - if: osx and arm64
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/fusion.ma64.so
+    - if: osx and x86_64
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/fusion.mi64.so
+    - if: win
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/fusion.wi64.dll

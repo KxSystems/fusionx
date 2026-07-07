@@ -43,6 +43,10 @@ The Windows binary can be cross compiled on Linux using Mingw-w64.
 CC=x86_64-w64-mingw32-gcc make
 ```
 
+## Conda package
+
+For information on how to build and host a conda package see [`Conda usage`](https://github.com/KxSystems/qmamba/wiki/Build)
+
 ## Notice
 
 Copyright (c) 2026 KX Systems, Inc.

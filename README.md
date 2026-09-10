@@ -2,6 +2,20 @@
 
 The fusionx module makes it easy to use native libraries, providing pre-built wrappers.
 
+## Install with qmamba
+
+qmamba is a package manager for KDB-X. It is currently available in a private preview capacity. You are welcome to try it and provide feedback.
+Follow the install instructions for [qmamba](https://github.com/KxSystems/qmamba/blob/main/README.md#installation).
+
+It's advisable to install the packages for your project in a separate environment, e.g.
+```q
+qmamba:use`kx.qmamba
+qmamba.create "myenv"
+qmamba.activate "myenv"
+```
+
+## Install a release
+
 To use the fusionx module copy the appropriate fusionx shared object file to the `mod` directory of
 your KDB-X installation. The latest release can be obtained from [here](https://github.com/KxSystems/fusionx/tags).
 
@@ -24,8 +38,8 @@ compile| code
 ```
 Fusionx purposefully doesn't interact with q namespaces, leaving the choice to you.
 ```q
-q).pcre2   :use`kx.fusion:pcre2 /namespace 
-q)pcre2    :use`kx.fusion:pcre2 /directory
+q).pcre2   :use`kx.fusion:pcre2 /directory 
+q)pcre2    :use`kx.fusion:pcre2 /namespace
 q)([match]):use`kx.fusion:pcre2 /one function
 ```
 Fusionx is built once and supports all distros, library versions, etc. you never have

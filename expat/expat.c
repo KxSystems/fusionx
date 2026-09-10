@@ -21,9 +21,7 @@ FNS
 typedef struct { V* p; K f; K seh; K eeh; K cdh;} ctx;
 
 Z K1(dtr) {
-  //printf("dtr\n");
   ctx* c=(ctx*) kK(x)[1];
-  K t = kK(x)[2];
   XML_ParserFree(c->p);
   #define FR(h) if(c->h)r0(c->h);
   FR(seh)

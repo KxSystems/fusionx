@@ -21,6 +21,6 @@ c:();r:();
 {c,:enlist"docker run --rm -v '",QHOME,"':/q -v '",QLIC,"':/l -v '",DIR,"':/f -w /f -h `hostname` -u `id -un` -e QPATH=/f/out ",x," /q/l64/q test.q -test ",(" "sv(string key pkg),\:"/t.q")}each i;
 /`:docker.txt 0: c;
 {r,:system x}each c;
-r:r[where not any like[r;] each ("Successfully loaded BLAS library*";"*all tests finished*")]
+r:r[where not any like[r;] each ("Successfully loaded BLAS library*";"*all tests finished*";"using default*")]
 show r;
 exit[0<count r]

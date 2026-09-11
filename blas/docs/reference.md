@@ -450,7 +450,7 @@ Returns `op(A) * x` where A is triangular and op(A) is A or Aᵀ
 ```q
 q)A:(1 2f; 0 4f)  / Upper triangular
 q)x:1 2f
-q).blas.dtrmv[A; x; `uplo`trans`diag`dummy!("U"; "N"; "N"; 0.1)]
+q).blas.dtrmv[A; x; `uplo`trans`diag!"UNN"]
 5 8f
 ```
 
@@ -635,7 +635,5 @@ Common errors and their meanings:
 
 -  `'type` - Incorrect argument type (expected float vector/matrix)
 - `'length` - Vector/matrix dimension mismatch
-- `'dimension_mismatch` - Matrix dimensions incompatible for operation
+- `'dimension mismatch` - Matrix dimensions incompatible for operation
 - `'memory` - Memory allocation failed
-- `'matrix_type` - Expected matrix (list of float vectors)
-- `'params_type` - Expected dictionary for params argument

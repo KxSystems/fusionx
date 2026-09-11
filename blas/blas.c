@@ -51,6 +51,28 @@ FNS_L3
 
 /* HELPERS */
 
+#define STRINGIFY(x) #x
+
+#define CHECK_MATRIX_TYPE(x,tn) \
+    P(x->t != 0, krr(#x" type")); \
+    for (size_t i = 0; i < x->n; i++) { \
+        P(kK(x)[i]->t != tn, krr(#x" values are not all of type "STRINGIFY(tn)"h")) \
+    }
+
+#define CHECK_TYPE(x, tn) P(x->t != tn, krr(#x" type not "STRINGIFY(tn)"h"))
+
+#define CHECK_FLOAT_ARRAY(x) CHECK_TYPE(x,KF)
+#define CHECK_FLOAT_ATOM(x) CHECK_TYPE(x,-KF)
+#define CHECK_FLOAT_MATRIX(x) CHECK_MATRIX_TYPE(x,KF)
+
+#define CHECK_SAME_LENGTH(x,y) P(x->n != x->n, krr(#x" and "#y" are not the same length"))
+#define CHECK_LENGTH(x,l) P(x->n != l, krr(#x"'s length is not "#l))
+
+#define IS_NULL(x) (x->t == 101 && x->g == 0)
+#define IS_DICT(x) (x->t == XD)
+#define CHECK_DICT_OR_NULL(x) P(x->t != XD && !IS_NULL(x), krr(#x" type not 99h or null (::)"));
+#define CHECK_DICT_WITH_SYM_KEYS(x) P(x->t == XD && kK(x)[0]->t != KS, krr(#x" keys type is not 11h"));
+
 // Convert KDB/Q object to a flat double array
 ZF* k_to_double_array(K x) {
     if (x->t == KF) {
@@ -147,53 +169,72 @@ Z int64_t find_key(K keys, S key) {
     return -1;  // Key not found
 }
 
-// Get a value from a KDB/Q dictionary
-ZK get_value_from_dict(K params, char* key) {
-    K keys = kK(params)[0];
-    K values = kK(params)[1];
-
-    int64_t idx = find_key(keys, key);
-    if (idx < 0 || idx >= keys->n) {
-        return 0;
-    }
-    return kK(values)[idx];
-}
-
 // Get a double value from a KDB/Q dictionary
 ZF get_double_value(K params, char* key, double default_value) {
-    K value = get_value_from_dict(params, key);
-    if (!value || value->t != -KF) {
-        return default_value;
+    K keys = kK(params)[0];
+    K values = kK(params)[1];
+    int64_t idx = find_key(keys, key);
+    if (idx < 0 || idx >= keys->n) goto end;
+    if (values->t == KF) {
+        return kF(values)[idx];
     }
-    double result = value->f;
-    return result;
+    if (values->t == 0) {
+        K value = kK(values)[idx];
+        if (value->t == -KF) {
+            return value->f;
+        } else goto end;
+    }
+
+end:
+    printf("using default value %f for %s\n", default_value, key);
+    return default_value;
 }
 
 // Get a character value from a KDB/Q dictionary
 ZC get_char_value(K params, char* key, char default_value) {
-    K value = get_value_from_dict(params, key);
-    if (!value || value->t != -KC) {
-        return default_value;
+    K keys = kK(params)[0];
+    K values = kK(params)[1];
+    int64_t idx = find_key(keys, key);
+    if (idx < 0 || idx >= keys->n) goto end;
+    if (values->t == KC) {
+        return kC(values)[idx];
     }
-    char result = value->g;
-    return result;
+    if (values->t == 0) {
+        K value = kK(values)[idx];
+        if (value->t == -KC) {
+            return value->g;
+        } else goto end;
+    }
+end:
+    printf("using default value %c for %s\n", default_value, key);
+    return default_value;
 }
 
 // Get an integer value from a KDB/Q dictionary
 Z int64_t get_int_value(K params, char* key, int64_t default_value) {
-    K value = get_value_from_dict(params, key);
-    if (!value || value->t != -KI) {
-        return default_value;
+    K keys = kK(params)[0];
+    K values = kK(params)[1];
+    int64_t idx = find_key(keys, key);
+    if (idx < 0 || idx >= keys->n) goto end;
+    if (values->t == KI) {
+        return kI(values)[idx];
     }
-    int64_t result = value->i;
-    return result;
+    if (values->t == 0) {
+        K value = kK(values)[idx];
+        if (value->t == -KI) {
+            return value->i;
+        } else goto end;
+    }
+end:
+    printf("using default value %ld for %s\n", default_value, key);
+    return default_value;
 }
 
 /* LEVEL 1 OPENBLAS FUNCTIONS */
 
 // Sum of absolute values -> |x1| + |x2| + ... + |xn|
 Z K1(z_dasum) {
-    P(xt != KF, krr("type"));
+    CHECK_FLOAT_ARRAY(x)
     int64_t n = xn;
     int64_t inc = 1;
     double result = dasum_(&n, kF(x), &inc);
@@ -202,8 +243,9 @@ Z K1(z_dasum) {
 
 // Vector addition -> y = αx + y
 ZK z_daxpy(K x_vec, K y_vec, K alpha) {
-    P(x_vec->t != KF || y_vec->t != KF, krr("type"));
-    P(x_vec->n != y_vec->n, krr("length"));
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_SAME_LENGTH(x_vec, y_vec)
     int64_t n = x_vec->n;
     int64_t incx = 1, incy = 1;
     double alpha_val = alpha->f;
@@ -218,8 +260,9 @@ ZK z_daxpy(K x_vec, K y_vec, K alpha) {
 
 // Copy vector -> y = x
 ZK z_dcopy(K x_vec, K y_vec) {
-    P(x_vec->t != KF || y_vec->t != KF, krr("type"));
-    P(x_vec->n != y_vec->n, krr("length"));
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_SAME_LENGTH(x_vec, y_vec)
     int64_t n = x_vec->n;
     int64_t incx = 1, incy = 1;
     K r = ktn(KF, n);
@@ -229,8 +272,9 @@ ZK z_dcopy(K x_vec, K y_vec) {
 
 // Dot product -> x.y
 ZK z_ddot(K x_vec, K y_vec) {
-    P(x_vec->t != KF || y_vec->t != KF, krr("type"));
-    P(x_vec->n != y_vec->n, krr("length"));
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_SAME_LENGTH(x_vec, y_vec)
     P(x_vec->n == 0, kf(0.0));
     int64_t n = x_vec->n;
     int64_t incx = 1, incy = 1;
@@ -240,7 +284,7 @@ ZK z_ddot(K x_vec, K y_vec) {
 
 // Euclidean norm -> sqrt(x.x)
 Z K1(z_dnrm2) {
-    P(xt != KF, krr("type"));
+    CHECK_FLOAT_ARRAY(x)
     int64_t n = xn;
     int64_t inc = 1;
     double result = dnrm2_(&n, kF(x), &inc);
@@ -249,8 +293,11 @@ Z K1(z_dnrm2) {
 
 // Plane rotation of points
 ZK z_drot(K x_vec, K y_vec, K cos, K sin) {
-    P(x_vec->t != KF || y_vec->t != KF || cos->t != -KF || sin->t != -KF, krr("type"));
-    P(x_vec->n != y_vec->n, krr("length"));
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_FLOAT_ATOM(cos)
+    CHECK_FLOAT_ATOM(sin)
+    CHECK_SAME_LENGTH(x_vec, y_vec)
     int64_t n = x_vec->n;
     int64_t incx = 1, incy = 1;
     double cos_val = cos->f;
@@ -261,7 +308,8 @@ ZK z_drot(K x_vec, K y_vec, K cos, K sin) {
 
 // Generate plane rotation
 ZK z_drotg(K a, K b) {
-    P(a->t != -KF || b->t != -KF, krr("type"));
+    CHECK_FLOAT_ATOM(a)
+    CHECK_FLOAT_ATOM(b)
     double da = a->f;
     double db = b->f;
     double c, s;
@@ -271,8 +319,9 @@ ZK z_drotg(K a, K b) {
 
 // Modified plane rotation
 ZK z_drotm(K x_vec, K y_vec, K param_k) {
-    P(x_vec->t != KF || y_vec->t != KF, krr("vector_type"));
-    P(param_k->t != KF || param_k->n != 5, krr("param_type"));
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_LENGTH(param_k, 5)
     int64_t n = x_vec->n;
     double* x_arr = k_to_double_array(x_vec);
     double* y_arr = k_to_double_array(y_vec);
@@ -294,7 +343,10 @@ ZK z_drotm(K x_vec, K y_vec, K param_k) {
 
 // Generate modified plane rotation
 ZK z_drotmg(K d1, K d2, K x1, K y1) {
-    P(d1->t != -KF || d2->t != -KF || x1->t != -KF || y1->t != -KF, krr("type"));
+    CHECK_FLOAT_ATOM(d1)
+    CHECK_FLOAT_ATOM(d2)
+    CHECK_FLOAT_ATOM(x1)
+    CHECK_FLOAT_ATOM(y1)
     double dd1 = d1->f;
     double dd2 = d2->f;
     double dx1 = x1->f;
@@ -308,7 +360,8 @@ ZK z_drotmg(K d1, K d2, K x1, K y1) {
 
 // Scale a vector -> x = αx
 ZK z_dscal(K alpha, K x_vec) {
-    P(alpha->t != -KF || x_vec->t != KF, krr("type"));
+    CHECK_FLOAT_ATOM(alpha)
+    CHECK_FLOAT_ARRAY(x_vec)
     int64_t n = x_vec->n;
     int64_t incx = 1;
     double alpha_val = alpha->f;
@@ -320,8 +373,9 @@ ZK z_dscal(K alpha, K x_vec) {
 
 // Swap vectors -> x <-> y
 ZK z_dswap(K x_vec, K y_vec) {
-    P(x_vec->t != KF || y_vec->t != KF, krr("type"));
-    P(x_vec->n != y_vec->n, krr("length"));
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_SAME_LENGTH(x_vec, y_vec)
     int64_t n = x_vec->n;
     int64_t incx = 1, incy = 1;
     dswap_(&n, kF(x_vec), &incx, kF(y_vec), &incy);
@@ -330,7 +384,7 @@ ZK z_dswap(K x_vec, K y_vec) {
 
 // Index of maximum absolute value
 Z K1(z_idamax) {
-    P(xt != KF, krr("type"));
+    CHECK_FLOAT_ARRAY(x)
     int64_t n = xn;
     int64_t inc = 1;
     int64_t result = idamax_(&n, kF(x), &inc);
@@ -341,14 +395,23 @@ Z K1(z_idamax) {
 
 // General matrix-vector multiplication -> y = alpha*A*x + beta*y
 ZK z_dgemv(K matr, K x_vec, K y_vec, K params) {
-    P(matr->t != 0 || ((matr->t == 0) && (kK(matr)[0]->t != KF)), krr("matrix_type"));
-    P(x_vec->t != KF || y_vec->t != KF, krr("array_type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(matr)
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char trans = toupper((unsigned char)get_char_value(params, "trans", 'N'));
-   
+    double alpha = 1.0;
+    double beta = 1.0;
+    char trans = 'N';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        trans = toupper((unsigned char)get_char_value(params, "trans", 'N'));
+    } else {
+        printf("using default values alpha=%f,beta=%f,trans=%c\n",alpha,beta,trans);
+    }
+
     int64_t m = matr->n;
     int64_t n = kK(matr)[0]->n;
     int64_t incx = 1, incy = 1;
@@ -385,15 +448,26 @@ ZK z_dgemv(K matr, K x_vec, K y_vec, K params) {
 
 // Banded matrix-vector multiplication
 ZK z_dgbmv(K matr, K x_vec, K y_vec, K params) {
-    P(matr->t != 0 || ((matr->t == 0) && (kK(matr)[0]->t != KF)), krr("matrix_type"));
-    P(x_vec->t != KF || y_vec->t != KF, krr("array_type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(matr)
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char trans = toupper((unsigned char)get_char_value(params, "trans", 'N'));
-    int64_t kl = get_int_value(params, "kl", 1);
-    int64_t ku = get_int_value(params, "ku", 1);
+    double alpha = 1.0;
+    double beta = 1.0;
+    char trans = 'N';
+    int64_t kl = 1;
+    int64_t ku = 1;
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        trans = toupper((unsigned char)get_char_value(params, "trans", 'N'));
+        kl = get_int_value(params, "kl", 1);
+        ku = get_int_value(params, "ku", 1);
+    } else {
+        printf("using default values alpha=%f,beta=%f,trans=%c\n,kl=%ld,ku=%ld",alpha,beta,trans,kl,ku);
+    }
 
     int64_t m = matr->n;
     int64_t n = kK(matr)[0]->n;
@@ -437,13 +511,22 @@ ZK z_dgbmv(K matr, K x_vec, K y_vec, K params) {
 
 // Symmetric matrix-vector multiplication
 ZK z_dsymv(K matr, K x_vec, K y_vec, K params) {
-    P(matr->t != 0 || ((matr->t == 0) && (kK(matr)[0]->t != KF)), krr("matrix_type"));
-    P(x_vec->t != KF || y_vec->t != KF, krr("array_type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(matr)
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char uplo = toupper((unsigned char)get_char_value(params, "uplo", 'U'));
+    double alpha = 1.0;
+    double beta = 1.0;
+    char uplo = 'U';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        uplo = toupper((unsigned char)get_char_value(params, "uplo", 'U'));
+    } else {
+        printf("using default values alpha=%f,beta=%f,uplo=%c\n",alpha,beta,uplo);
+    }
 
     int64_t n = matr->n;
     int64_t incx = 1, incy = 1;
@@ -469,14 +552,24 @@ ZK z_dsymv(K matr, K x_vec, K y_vec, K params) {
 
 // Symmetric banded matrix-vector multiplication
 ZK z_dsbmv(K matr, K x_vec, K y_vec, K params) {
-    P(matr->t != 0 || ((matr->t == 0) && (kK(matr)[0]->t != KF)), krr("matrix_type"));
-    P(x_vec->t != KF || y_vec->t != KF, krr("array_type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(matr)
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char uplo = get_char_value(params, "uplo", 'U');
-    int64_t ku = get_int_value(params, "ku", 1);
+    double alpha = 1.0;
+    double beta = 1.0;
+    char uplo = 'U';
+    int64_t ku = 1;
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        uplo = toupper((unsigned char)get_char_value(params, "uplo", 'U'));
+        ku = get_int_value(params, "ku", 1);
+    } else {
+        printf("using default values alpha=%f,beta=%f,uplo=%c,ku=%ld\n",alpha,beta,uplo,ku);
+    }
 
     int64_t n = x_vec->n;
     int64_t ldab = ku + 1;
@@ -509,13 +602,22 @@ ZK z_dsbmv(K matr, K x_vec, K y_vec, K params) {
 
 // Symmetric packed matrix-vector multiplication
 ZK z_dspmv(K matr, K x_vec, K y_vec, K params) {
-    P(matr->t != KF, krr("matrix_type"));
-    P(x_vec->t != KF || y_vec->t != KF, krr("array_type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_ARRAY(matr)
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char uplo = get_char_value(params, "uplo", 'U');
+    double alpha = 1.0;
+    double beta = 1.0;
+    char uplo = 'U';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        uplo = toupper((unsigned char)get_char_value(params, "uplo", 'U'));
+    } else {
+        printf("using default values alpha=%f,beta=%f,uplo=%c\n",alpha,beta,uplo);
+    }
 
     int64_t n = x_vec->n;
     int64_t incx = 1, incy = 1;
@@ -537,18 +639,22 @@ ZK z_dspmv(K matr, K x_vec, K y_vec, K params) {
 
 // Triangular matrix-vector multiplication
 ZK z_dtrmv(K matr, K x_vec, K params) {
-    P(matr->t != 0 || ((matr->t == 0) && (kK(matr)[0]->t != KF)), krr("matrix_type"));
-    P(x_vec->t != KF, krr("array_type"));
+    CHECK_FLOAT_MATRIX(matr)
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    K keys = NULL, values = NULL;
-    if (params && params->t == XD) {
-        keys = kK(params)[0];
-        values = kK(params)[1];
+    char uplo  = 'U';
+    char trans = 'N';
+    char diag  = 'N';
+
+    if IS_DICT(params) {
+        uplo = get_char_value(params, "uplo", 'U');
+        trans = get_char_value(params, "trans", 'N');
+        diag = get_char_value(params, "diag", 'N');
+    } else {
+        printf("using default values uplo=%c,trans=%c,diag=%c\n",uplo,trans,diag);
     }
-
-    char uplo = get_char_value(params, "uplo", 'U');
-    char trans = get_char_value(params, "trans", 'N');
-    char diag = get_char_value(params, "diag", 'N');
 
     int64_t n = matr->n;
     int64_t incx = 1;
@@ -577,12 +683,13 @@ ZK z_dtrmv(K matr, K x_vec, K params) {
 }
 
 // Rank-1 update of a general matrix
-ZK z_dger(K matr, K x_vec, K y_vec, K alpha_k) {
-    P(matr->t != 0 || ((matr->t == 0) && (kK(matr)[0]->t != KF)), krr("matrix_type"));
-    P(x_vec->t != KF || y_vec->t != KF, krr("array_type"));
-    P(alpha_k->t != -KF, krr("alpha_type"));
+ZK z_dger(K matr, K x_vec, K y_vec, K alpha) {
+    CHECK_FLOAT_MATRIX(matr)
+    CHECK_FLOAT_ARRAY(x_vec)
+    CHECK_FLOAT_ARRAY(y_vec)
+    CHECK_FLOAT_ATOM(alpha)
 
-    double alpha = alpha_k->f;
+    double alpha_ = alpha->f;
     int64_t m = matr->n;
     int64_t n = kK(matr)[0]->n;
     int64_t incx = 1, incy = 1;
@@ -605,7 +712,7 @@ ZK z_dger(K matr, K x_vec, K y_vec, K alpha_k) {
         return krr("memory");
     }
 
-    dger_(&m, &n, &alpha, x_arr, &incx, y_arr, &incy, a_arr_transposed, &m);
+    dger_(&m, &n, &alpha_, x_arr, &incx, y_arr, &incy, a_arr_transposed, &m);
 
     for (int64_t i = 0; i < m; i++) {
         for (int64_t j = 0; j < n; j++) {
@@ -625,15 +732,24 @@ ZK z_dger(K matr, K x_vec, K y_vec, K alpha_k) {
 
 // General matrix-matrix multiplication -> C = alpha*A*B + beta*C
 ZK z_dgemm(K A, K B, K C, K params) {
-    P(A->t != 0 || ((A->t == 0) && (kK(A)[0]->t != KF)), krr("type"));
-    P(B->t != 0 || ((B->t == 0) && (kK(B)[0]->t != KF)), krr("type"));
-    P(C->t != 0 || ((C->t == 0) && (kK(C)[0]->t != KF)), krr("type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(A)
+    CHECK_FLOAT_MATRIX(B)
+    CHECK_FLOAT_MATRIX(C)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char transA = get_char_value(params, "transA", 'N');
-    char transB = get_char_value(params, "transB", 'N');
+    double alpha = 1.0;
+    double beta = 1.0;
+    char transA = 'N';
+    char transB = 'N';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        transA = get_char_value(params, "transA", 'N');
+        transB = get_char_value(params, "transB", 'N');
+    } else {
+        printf("using default values alpha=%f,beta=%f,transA=%c,transB=%c\n",alpha,beta,transA,transB);
+    }
 
     int64_t m_A = A->n;
     int64_t n_A = kK(A)[0]->n;
@@ -642,10 +758,10 @@ ZK z_dgemm(K A, K B, K C, K params) {
     int64_t m_C = C->n;
     int64_t n_C = kK(C)[0]->n;
 
-    if ((transA == 'N' && transB == 'N') && (n_A != m_B || m_A != m_C || n_B != n_C)) return krr("dimension_mismatch");
-    if ((transA == 'T' && transB == 'N') && (m_A != m_B || n_A != m_C || n_B != n_C)) return krr("dimension_mismatch");
-    if ((transA == 'N' && transB == 'T') && (n_A != n_B || m_A != m_C || m_B != n_C)) return krr("dimension_mismatch");
-    if ((transA == 'T' && transB == 'T') && (m_A != n_B || n_A != m_C || m_B != n_C)) return krr("dimension_mismatch");
+    if ((transA == 'N' && transB == 'N') && (n_A != m_B || m_A != m_C || n_B != n_C)) return krr("dimension mismatch");
+    if ((transA == 'T' && transB == 'N') && (m_A != m_B || n_A != m_C || n_B != n_C)) return krr("dimension mismatch");
+    if ((transA == 'N' && transB == 'T') && (n_A != n_B || m_A != m_C || m_B != n_C)) return krr("dimension mismatch");
+    if ((transA == 'T' && transB == 'T') && (m_A != n_B || n_A != m_C || m_B != n_C)) return krr("dimension mismatch");
 
     double* A_arr = k_to_double_array_column(A);
     double* B_arr = k_to_double_array_column(B);
@@ -669,15 +785,24 @@ ZK z_dgemm(K A, K B, K C, K params) {
 
 // Symmetric matrix-matrix multiplication -> C = alpha*A*B + beta*C or C = alpha*B*A + beta*C
 ZK z_dsymm(K A, K B, K C, K params) {
-    P(A->t != 0 || ((A->t == 0) && (kK(A)[0]->t != KF)), krr("type"));
-    P(B->t != 0 || ((B->t == 0) && (kK(B)[0]->t != KF)), krr("type"));
-    P(C->t != 0 || ((C->t == 0) && (kK(C)[0]->t != KF)), krr("type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(A)
+    CHECK_FLOAT_MATRIX(B)
+    CHECK_FLOAT_MATRIX(C)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char side = get_char_value(params, "side", 'L');
-    char uplo = get_char_value(params, "uplo", 'U');
+    double alpha = 1.0;
+    double beta = 1.0;
+    char side = 'L';
+    char uplo = 'U';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        side = get_char_value(params, "side", 'L');
+        uplo = get_char_value(params, "uplo", 'U');
+    } else {
+        printf("using default values alpha=%f,beta=%f,side=%c,uplo=%c\n",alpha,beta,side,uplo);
+    }
 
     int64_t m_A = A->n;
     int64_t n_A = kK(A)[0]->n;
@@ -687,9 +812,9 @@ ZK z_dsymm(K A, K B, K C, K params) {
     int64_t n_C = kK(C)[0]->n;
 
     if (side == 'L') {
-        if (m_A != n_A || m_A != m_B || n_B != n_C) return krr("dimension_mismatch");
+        if (m_A != n_A || m_A != m_B || n_B != n_C) return krr("dimension mismatch");
     } else if (side == 'R') {
-        if (m_A != n_A || n_A != n_B || m_B != m_C) return krr("dimension_mismatch");
+        if (m_A != n_A || n_A != n_B || m_B != m_C) return krr("dimension mismatch");
     } else {
         return krr("invalid_side");
     }
@@ -716,14 +841,23 @@ ZK z_dsymm(K A, K B, K C, K params) {
 
 // Symmetric rank-k update -> C = alpha*A*A^T + beta*C or C = alpha*A^T*A + beta*C
 ZK z_dsyrk(K A, K C, K params) {
-    P(A->t != 0 || ((A->t == 0) && (kK(A)[0]->t != KF)), krr("type"));
-    P(C->t != 0 || ((C->t == 0) && (kK(C)[0]->t != KF)), krr("type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(A)
+    CHECK_FLOAT_MATRIX(C)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char uplo = get_char_value(params, "uplo", 'U');
-    char trans = get_char_value(params, "trans", 'N');
+    double alpha = 1.0;
+    double beta = 1.0;
+    char uplo = 'U';
+    char trans = 'N';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        uplo = get_char_value(params, "uplo", 'U');
+        trans = get_char_value(params, "trans", 'N');
+    } else {
+        printf("using default values alpha=%f,beta=%f,uplo=%c,trans=%c\n",alpha,beta,uplo,trans);
+    }
 
     int64_t m_A = A->n;
     int64_t n_A = kK(A)[0]->n;
@@ -731,9 +865,9 @@ ZK z_dsyrk(K A, K C, K params) {
     int64_t n_C = kK(C)[0]->n;
 
     if (trans == 'N') {
-        if (m_C != n_C || m_C != m_A) return krr("dimension_mismatch");
+        if (m_C != n_C || m_C != m_A) return krr("dimension mismatch");
     } else if (trans == 'T') {
-        if (m_C != n_C || m_C != n_A) return krr("dimension_mismatch");
+        if (m_C != n_C || m_C != n_A) return krr("dimension mismatch");
     } else {
         return krr("invalid_trans");
     }
@@ -759,15 +893,24 @@ ZK z_dsyrk(K A, K C, K params) {
 
 // Symmetric rank-2k update -> C = alpha*A*B' + alpha*B*A' + beta*C
 ZK z_dsyr2k(K A, K B, K C, K params) {
-    P(A->t != 0 || ((A->t == 0) && (kK(A)[0]->t != KF)), krr("type"));
-    P(B->t != 0 || ((B->t == 0) && (kK(B)[0]->t != KF)), krr("type"));
-    P(C->t != 0 || ((C->t == 0) && (kK(C)[0]->t != KF)), krr("type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(A)
+    CHECK_FLOAT_MATRIX(B)
+    CHECK_FLOAT_MATRIX(C)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    double beta = get_double_value(params, "beta", 1.0);
-    char uplo = get_char_value(params, "uplo", 'U');
-    char trans = get_char_value(params, "trans", 'N');
+    double alpha = 1.0;
+    double beta = 1.0;
+    char uplo = 'U';
+    char trans = 'N';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        beta = get_double_value(params, "beta", 1.0);
+        uplo = get_char_value(params, "uplo", 'U');
+        trans = get_char_value(params, "trans", 'N');
+    } else {
+        printf("using default values alpha=%f,beta=%f,uplo=%c,trans=%c\n",alpha,beta,uplo,trans);
+    }
 
     int64_t m_A = A->n;
     int64_t n_A = kK(A)[0]->n;
@@ -777,9 +920,9 @@ ZK z_dsyr2k(K A, K B, K C, K params) {
     int64_t n_C = kK(C)[0]->n;
 
     if (trans == 'N') {
-        if (m_A != m_B || n_A != n_B || m_C != n_C || m_C != m_A) return krr("dimension_mismatch");
+        if (m_A != m_B || n_A != n_B || m_C != n_C || m_C != m_A) return krr("dimension mismatch");
     } else if (trans == 'T') {
-        if (m_A != m_B || n_A != n_B || m_C != n_C || m_C != n_A) return krr("dimension_mismatch");
+        if (m_A != m_B || n_A != n_B || m_C != n_C || m_C != n_A) return krr("dimension mismatch");
     } else {
         return krr("invalid_trans");
     }
@@ -807,15 +950,25 @@ ZK z_dsyr2k(K A, K B, K C, K params) {
 
 // Triangular matrix-matrix multiplication -> B = alpha*op(A)*B or B = alpha*B*op(A)
 ZK z_dtrmm(K A, K B, K params) {
-    P(A->t != 0 || ((A->t == 0) && (kK(A)[0]->t != KF)), krr("type"));
-    P(B->t != 0 || ((B->t == 0) && (kK(B)[0]->t != KF)), krr("type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(A)
+    CHECK_FLOAT_MATRIX(B)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    char side = get_char_value(params, "side", 'L');
-    char uplo = get_char_value(params, "uplo", 'U');
-    char transA = get_char_value(params, "transA", 'N');
-    char diag = get_char_value(params, "diag", 'N');
+    double alpha = 1.0;
+    char side = 'L';
+    char uplo = 'U';
+    char transA = 'N';
+    char diag = 'N';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        side = get_char_value(params, "side", 'L');
+        uplo = get_char_value(params, "uplo", 'U');
+        transA = get_char_value(params, "transA", 'N');
+        diag = get_char_value(params, "diag", 'N');
+    } else {
+        printf("using default values alpha=%f,side=%c,uplo=%c,transA=%c,diag=%c\n",alpha,side,uplo,transA,diag);
+    }
 
     int64_t m_A = A->n;
     int64_t n_A = kK(A)[0]->n;
@@ -823,9 +976,9 @@ ZK z_dtrmm(K A, K B, K params) {
     int64_t n_B = kK(B)[0]->n;
 
     if (side == 'L') {
-        if (m_A != n_A || m_A != m_B) return krr("dimension_mismatch");
+        if (m_A != n_A || m_A != m_B) return krr("dimension mismatch");
     } else if (side == 'R') {
-        if (m_A != n_A || m_A != n_B) return krr("dimension_mismatch");
+        if (m_A != n_A || m_A != n_B) return krr("dimension mismatch");
     } else {
         return krr("invalid_side");
     }
@@ -850,15 +1003,25 @@ ZK z_dtrmm(K A, K B, K params) {
 
 // Solving triangular matrix equations -> op(A)*X = alpha*B or X*op(A) = alpha*B
 ZK z_dtrsm(K A, K B, K params) {
-    P(A->t != 0 || ((A->t == 0) && (kK(A)[0]->t != KF)), krr("type"));
-    P(B->t != 0 || ((B->t == 0) && (kK(B)[0]->t != KF)), krr("type"));
-    P(params->t != XD, krr("params_type"));
+    CHECK_FLOAT_MATRIX(A)
+    CHECK_FLOAT_MATRIX(B)
+    CHECK_DICT_OR_NULL(params)
+    CHECK_DICT_WITH_SYM_KEYS(params)
 
-    double alpha = get_double_value(params, "alpha", 1.0);
-    char side = get_char_value(params, "side", 'L');
-    char uplo = get_char_value(params, "uplo", 'U');
-    char transA = get_char_value(params, "transA", 'N');
-    char diag = get_char_value(params, "diag", 'N');
+    double alpha = 1.0;
+    char side = 'L';
+    char uplo = 'U';
+    char transA = 'N';
+    char diag = 'N';
+    if IS_DICT(params) {
+        alpha = get_double_value(params, "alpha", 1.0);
+        side = get_char_value(params, "side", 'L');
+        uplo = get_char_value(params, "uplo", 'U');
+        transA = get_char_value(params, "transA", 'N');
+        diag = get_char_value(params, "diag", 'N');
+    } else {
+        printf("using default values alpha=%f,side=%c,uplo=%c,transA=%c,diag=%c\n",alpha,side,uplo,transA,diag);
+    }
 
     int64_t m_A = A->n;
     int64_t n_A = kK(A)[0]->n;
@@ -866,9 +1029,9 @@ ZK z_dtrsm(K A, K B, K params) {
     int64_t n_B = kK(B)[0]->n;
 
     if (side == 'L') {
-        if (m_A != n_A || m_A != m_B) return krr("dimension_mismatch");
+        if (m_A != n_A || m_A != m_B) return krr("dimension mismatch");
     } else if (side == 'R') {
-        if (m_A != n_A || m_A != n_B) return krr("dimension_mismatch");
+        if (m_A != n_A || m_A != n_B) return krr("dimension mismatch");
     } else {
         return krr("invalid_side");
     }

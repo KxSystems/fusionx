@@ -1,5 +1,5 @@
 context:
-  version: "1.2.2"
+  version: ${{ env.get("PKG_VERSION", default="0.0.0") }}
 
 package:
   name: q-kx-pcre2
@@ -21,3 +21,13 @@ requirements:
   run:
     - q-kx-fusionx
     - pcre2
+
+about:
+  homepage: https://github.com/KxSystems/fusionx
+  repository: https://github.com/KxSystems/fusionx
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: q bindings to the PCRE2 regular expression library.
+  description: |
+    The PCRE2 module provides q bindings to the PCRE2 regular expression library, enabling Perl-compatible
+    regular expression matching directly from q. This package is part of the fusionx module.

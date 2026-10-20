@@ -1,5 +1,5 @@
 context:
-  version: "1.2.2"
+  version: ${{ env.get("PKG_VERSION", default="0.0.0") }}
 
 package:
   name: q-kx-fusionx
@@ -44,6 +44,16 @@ requirements:
     - make
     - if: not win
       then: ${{ compiler("c") }}
+
+about:
+  homepage: https://github.com/KxSystems/fusionx
+  repository: https://github.com/KxSystems/fusionx
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The fusionx module makes it easy to use native libraries, providing pre-built wrappers.
+  description: |
+    The fusionx module makes it easy to use native libraries from KDB-X, providing pre-built wrappers.
+    It is the module provider for the BLAS, PCRE2 and Expat wrapper modules.
 
 tests:
   - script:

@@ -1,5 +1,5 @@
 context:
-  version: "1.2.2"
+  version: ${{ env.get("PKG_VERSION", default="0.0.0") }}
 
 package:
   name: q-kx-openblas
@@ -21,3 +21,13 @@ requirements:
   run:
     - q-kx-fusionx
     - openblas
+
+about:
+  homepage: https://github.com/KxSystems/fusionx
+  repository: https://github.com/KxSystems/fusionx
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: q bindings to BLAS (Basic Linear Algebra Subprograms) libraries, using OpenBLAS.
+  description: |
+    The BLAS module provides q bindings to BLAS libraries, enabling high-performance linear algebra
+    operations directly from q. This package is part of the fusionx module and uses the OpenBLAS library.

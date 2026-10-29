@@ -1,0 +1,24 @@
+name: q-kx-fusionx
+description: >-
+  The fusionx module makes it easy to use native libraries, providing pre-built wrappers.
+homepage: https://github.com/KxSystems/fusionx
+namespace: kx.fusion
+
+source:
+  repo: https://github.com/KxSystems/fusion
+  version: 1.2.2
+  path: .
+
+license: Apache-2.0
+
+maintainers:
+  - github: KxSystems
+
+platforms:
+  - linux
+  - linux-arm
+  - mac
+  - mac-arm
+
+compatibility:
+  kdbx: ">=5.0.0"
